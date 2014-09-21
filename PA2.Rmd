@@ -1,0 +1,57 @@
+```{r, cache=TRUE, echo=TRUE}
+```
+---
+title:"Your document should have a title that briefly summarizes your data analysis"
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+## Synopsis
+
+At most, 10 complete sentences that summarize the results.
+
+
+## Data Processing
+
+Obtain the NOAA storm data from the course website.
+
+```{r}
+fname="./stormdata.bz2"
+if(!file.exists(fname)) {
+    url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(url, fname, mode="wb")
+}
+
+# The double arrow "<<-" caches data in the global namespace. To save time, we do not reload it if it exists.
+if(!exists("stormdata", where=globalenv())) {
+    stormdata<<-read.csv(fname)
+}
+```
+
+The data obtained contains values for U.S. States and territories, but also data from sources that are unclear. For the purposes of this analysis, we will limit the scope to only the 50 states and the District of Columbia.
+
+```{r}
+statelist=c("AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY")
+statedata=subset(stormdata, STATE %in% statelist)
+statedata=droplevels(statedata)
+```
+
+To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
+
+```{r}
+hi.fatal=subset(statedata, FATALITIES > 50)
+hi.fatal=droplevels(hi.fatal)
+
+hi.injury=subset(statedata, INJURIES > 500)
+hi.injury=droplevels(hi.injury)
+```
+
+## Results
+
+To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
+
+```{r}
+```
+
