@@ -1,11 +1,7 @@
 ```{r, cache=TRUE, echo=TRUE}
 ```
----
-title:"Your document should have a title that briefly summarizes your data analysis"
-output: 
-  html_document:
-    keep_md: true
----
+Your document should have a title that briefly summarizes your data analysis
+===================
 
 
 ## Synopsis
@@ -23,11 +19,15 @@ if(!file.exists(fname)) {
     url <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
     download.file(url, fname, mode="wb")
 }
+stormdata=read.csv(fname)
+```
 
-# The double arrow "<<-" caches data in the global namespace. To save time, we do not reload it if it exists.
-if(!exists("stormdata", where=globalenv())) {
-    stormdata<<-read.csv(fname)
-}
+We don't need all of the data to answer the questions. Because the older data is less consistent in the way it was collected, and is likely, less accurate. The number of entries neary doubled in 1994, to over 20000 entries per year. This seems to reflect a change in collection. Therefore we will subset the data to include data from 1989 onward.
+
+```{r}
+stormdata$DATE=as.Date(factor(stormdata$BGN_DATE), format("%m/%d/%Y"))
+stormdata$YEAR=as.numeric(format(stormdata$DATE, "%Y"))
+stormdata=subset(stormdata,YEAR>=1994)
 ```
 
 The data obtained contains values for U.S. States and territories, but also data from sources that are unclear. For the purposes of this analysis, we will limit the scope to only the 50 states and the District of Columbia.
@@ -38,19 +38,75 @@ statedata=subset(stormdata, STATE %in% statelist)
 statedata=droplevels(statedata)
 ```
 
+The naming conventions are inconsistent. We try to make a reasonable attempt to group similary named events.
+
+```{r}
+statedata$EVTYPE=with(statedata, sub(".*WINTER.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*SNOW.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*BLIZZARD.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*ICE.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*FROST.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*FREEZE.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*COLD.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*WINTRY.*","WINTER WEATHER", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*HEAT.*","EXTREME HEAT", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub("RECORD HIGH","EXTREME HEAT", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub("RECORD WARMTH","EXTREME HEAT", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*WIND.*","HIGH WIND", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*HAIL.*","HAIL", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*TORNADO.*","TORNADO", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*FUNNEL.*","TORNADO", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*HURRICANE.*","HURRICANE", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*FLOOD.*","FLOODING", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*RAIN.*","FLOODING", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*WIND.*","HIGH WIND", EVTYPE, ignore.case=T))
+
+# Turn the event types back into factor variables.
+statedata$EVTYPE=factor(statedata$EVTYPE)
+
+unique(statedata$EVTYPE)
+```
+
 To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
 
 ```{r}
-hi.fatal=subset(statedata, FATALITIES > 50)
-hi.fatal=droplevels(hi.fatal)
+fatalities=with(statedata, aggregate(FATALITIES, by=list(EVTYPE), FUN=sum))
+# Drop rows with zero values.
+fatalities=subset(fatalities, x > 0)
+fatalities=droplevels(fatalities)
+#fatalities$Group.1=factor(fatalities$Group.1)
 
-hi.injury=subset(statedata, INJURIES > 500)
+hi.fatal=subset(fatalities, x > 50)
+hi.fatal=droplevels(hi.fatal)
+hi.fatal
+
+injuries=with(statedata, aggregate(INJURIES, by=list(EVTYPE), FUN=sum))
+# Drop rows with zero values.
+injuries=subset(injuries, x > 0)
+injuries=droplevels(injuries)
+
+hi.injury=subset(injuries, x > 100)
 hi.injury=droplevels(hi.injury)
+hi.injury
 ```
 
 ## Results
 
 To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
+
+```{r}
+plot(hi.fatal, las=2, main="Number of fatalities per severe weather type", xlab="", ylab="Number of Fatalities")
+plot(hi.injury, las=2, main="Number of injuries per severe weather type", xlab="", ylab="Number of Injuries")
+```
+
+
 
 ```{r}
 ```
