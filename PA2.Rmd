@@ -65,8 +65,13 @@ statedata$EVTYPE=with(statedata, sub(".*HURRICANE.*","HURRICANE", EVTYPE, ignore
 
 statedata$EVTYPE=with(statedata, sub(".*FLOOD.*","FLOODING", EVTYPE, ignore.case=T))
 statedata$EVTYPE=with(statedata, sub(".*RAIN.*","FLOODING", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, sub(".*STORM SURGE.*","FLOODING", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, sub(".*WIND.*","HIGH WIND", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*DUST.*","DUST STORM", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, sub(".*FOG.*","FOG", EVTYPE, ignore.case=T))
 
 # Turn the event types back into factor variables.
 statedata$EVTYPE=factor(statedata$EVTYPE)
@@ -102,6 +107,7 @@ hi.injury
 To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
 
 ```{r}
+par(mar=c(10.1,4.1,4.1,2.1))
 plot(hi.fatal, las=2, main="Number of fatalities per severe weather type", xlab="", ylab="Number of Fatalities")
 plot(hi.injury, las=2, main="Number of injuries per severe weather type", xlab="", ylab="Number of Injuries")
 ```
