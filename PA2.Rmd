@@ -1,13 +1,16 @@
 ```{r, cache=TRUE, echo=TRUE}
 ```
-Your document should have a title that briefly summarizes your data analysis
+Analysis of Health Hazards and Economic Impacts of Extreme Weather
 ===================
 
 
 ## Synopsis
 
-At most, 10 complete sentences that summarize the results.
+This report summarizes an analysis of the NOAA extreme weather records. The data was subsetted to include only the years 1996-2011 for the 50 United States and the District of Columbia.
 
+The analysis presented here shows that clearly, tornados, floods, and exterme heat present the greatest health related hazards from extreme weather. Extreme heat contributes the most to fatalities, while tornadoes produce the most injurues. Flooding, hurricanes, and tornadoes contribute most to economic damage with flooding being a much larger contributor than any other weather event.
+
+As a side note: For improved future reporting, it is recomended that event types be explicitly enumerated and thier criteria, firmly established.
 
 ## Data Processing
 
@@ -22,12 +25,13 @@ if(!file.exists(fname)) {
 stormdata=read.csv(fname)
 ```
 
-We don't need all of the data to answer the questions. Because the older data is less consistent in the way it was collected, and is likely, less accurate. The number of entries neary doubled in 1994, to over 20000 entries per year. This seems to reflect a change in collection. Therefore we will subset the data to include data from 1989 onward.
+We don't need all of the data to answer the questions. Because the older data is less consistent in the way it was collected, and is likely, less accurate. Based on converstaions in this discussion thread (https://class.coursera.org/repdata-006/forum/thread?thread_id=125) we make the decision to use data starting from 1996.
+
 
 ```{r subset dates}
 stormdata$DATE=as.Date(factor(stormdata$BGN_DATE), format("%m/%d/%Y"))
 stormdata$YEAR=as.numeric(format(stormdata$DATE, "%Y"))
-stormdata=subset(stormdata,YEAR>=1994)
+stormdata=subset(stormdata,YEAR>=1996)
 ```
 
 The data obtained contains values for U.S. States and territories, but also data from sources that are unclear. For the purposes of this analysis, we will limit the scope to only the 50 states and the District of Columbia.
@@ -38,44 +42,74 @@ statedata=subset(stormdata, STATE %in% statelist)
 statedata=droplevels(statedata)
 ```
 
-The naming conventions are inconsistent. We try to make a reasonable attempt to group similary named events.
+The naming conventions are inconsistent. We try to make a reasonable attempt to group similary named events. We could spend more time here cleaning the data set, but this should be suffucient to identify the major contributors being assessed.
 
 ```{r group by event type}
-statedata$EVTYPE=with(statedata, gsub(".*UNSEASONABL.*|WARM WEATHER|UNUSUALLY WARM|VERY WARM|PROLONG WARMTH|MONTHLY PRECIPITATION","UNSEASONABLE WEATHER", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*UNSEASONABL.*|WARM WEATHER|UNUSUALLY WARM|VERY WARM|PROLONG WARMTH|MONTHLY PRECIPITATION|UNUSUAL WARMTH","UNSEASONABLE WEATHER", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub(".*WINTER.*|.*SNOW.*|.*BLIZZARD.*|.*ICE.*|.*FROST.*|.*FREEZE.*|.*COLD.*|.*WINTRY.*|.*FREEZING.*|.*ICY.*","WINTER WEATHER", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub(".*SLEET.*","SLEET", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*HEAT.*|EXTREME HEAT|RECORD WARMTH","EXTREME HEAT", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*HEAT.*|EXTREME HEAT|RECORD WARMTH|HIGH TEMPERATURE RECORD|RECORD HIGH|HOT SPELL|.*RECORD WARM.*", "EXTREME HEAT", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub(".*THUNDERSTORM.*","THUNDERSTORM", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*WILD ?FIRE|.*BRUSH ?FIRE|.*FOREST ?FIRE","WILD/FOREST FIRE", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*MICOBURST.*|.*DOWNBURST.*","MICROBURST", EVTYPE, ignore.case=T))
+match=agrep("MICROBURST", statedata$EVTYPE, max=2, ignore.case=TRUE)
+statedata$EVTYPE[match]="MICROBURST"
 
-statedata$EVTYPE=with(statedata, gsub("ABNORMALLY WET|EXTREMELY WET","WET CONDITIONS", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub("GRASS FIRES?|.*WILD ?FIRE|.*BRUSH ?FIRE|.*FOREST ?FIRE","WILD/FOREST FIRE", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub("LAND ?SLIDE|LANDSLUMP|MUD ?SLIDE","LANDSLIDE", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub("ABNORMALLY WET|EXTREMELY WET|EXCESSIVE WETNESS|WET MONTH|WET YEAR","WET CONDITIONS", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*.*DROUGHT.*.*|ABNORMALLY DROUGHT|VERY DRY.*|DRY|DRY SPELL|DRY CONDITIONS","DROUGHT", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub("LAND ?SLIDES?|LANDSLUMP|MUD ?SLIDE|ROCK ?SLIDE|.*LANDSLIDE.*","LANDSLIDE", EVTYPE, ignore.case=T))
+match=agrep("LANDSLIDE", statedata$EVTYPE, max=2, ignore.case=TRUE)
+statedata$EVTYPE[match]="LANDSLIDE"
+
+statedata$EVTYPE=with(statedata, gsub("DRYEST MONTH|.*DROUGHT.*|ABNORMALLY DROUGHT|VERY DRY.*|DRY|DRY SPELL|DRY CONDITIONS","DROUGHT", EVTYPE, ignore.case=T))
+match=agrep("DROUGHT", statedata$EVTYPE, max=2, ignore.case=TRUE)
+statedata$EVTYPE[match]="DROUGHT"
 
 statedata$EVTYPE=with(statedata, gsub(".*HAIL.*","HAIL", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*TORNADO.*|.*FUNNEL.*|.*WATERSPOUT.*","TORNADO", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*LIGHTNING.*","LIGHTNING", EVTYPE, ignore.case=T))
+match=agrep("LIGHTNING", statedata$EVTYPE, max=2, ignore.case=TRUE)
+statedata$EVTYPE[match]="LIGHTNING"
 
-statedata$EVTYPE=with(statedata, gsub(".*HURRICANE.*","HURRICANE", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*TROPICAL STORM.*","TROPICAL STORM", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*FLOOD.*|.*RAIN.*|STORM SURGE|.*STREAM FLD|.*HIGH WATER.*","FLOODING", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*TORNADO.*|.*FUNNEL.*|.*WATERSPOUT.*|LANDSPOUT","TORNADO", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*HURRICANE.*|.*FLOYD","HURRICANE", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*FLOOD.*|FLOODING/TIDE|.*RAIN.*|STORM SURGE|.*STREAM FLD|.*SMALL STREAM.*|.*HIGH WATER.*|RAPIDLY RISING WATER", "FLOODING", EVTYPE, ignore.case=T))
+match=agrep("FLOOD", statedata$EVTYPE, max=2, ignore.case=TRUE)
+statedata$EVTYPE[match]="FLOODING"
 
 statedata$EVTYPE=with(statedata, gsub(".*SURF.*|.*RED FLAG.*","HIGH/HAZARDOUS SURF", EVTYPE, ignore.case=T))
 
-statedata$EVTYPE=with(statedata, gsub(".*WIND.*|.*WND.*","HIGH WIND", EVTYPE, ignore.case=T))
+statedata$EVTYPE=with(statedata, gsub(".*WIND.*|.*WND.*|.*GUSTNADO.*","HIGH WIND", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*MIXED PRECIP.*","MIXED PRECIPITATION", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*BLOW-?OUT TIDE.*","BLOW-OUT TIDE", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*HYPOTHERMIA/EXPOSURE.*","HYPOTHERMIA/EXPOSURE", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub(".*DUST.*","DUST STORM", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*VOLCAN.*","VOLCANIC ACTIVITY", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*DAM.*","DAM BREACH", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*WALL CLOUD.*","WALL CLOUD", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub(".*FOG.*","FOG", EVTYPE, ignore.case=T))
 
 statedata$EVTYPE=with(statedata, gsub("*.RIP CURRENT.*","RIP CURRENT", EVTYPE, ignore.case=T))
+
+statedata$EVTYPE=with(statedata, gsub(".*SUMMARY.*","OTHER", EVTYPE, ignore.case=T))
 
 # Turn the event types back into factor variables.
 statedata$EVTYPE=factor(statedata$EVTYPE)
@@ -106,6 +140,8 @@ hi.injury=droplevels(hi.injury)
 hi.injury
 ```
 
+To ocmpute cost, we combine the reported property and crop damage. The *EXP columns are stated to contain units of thousands, millions, and billions [K,B,M of dollars]. We choose to impute invalid values by entering a multiple of one. If this is not the correct multiple, then the economic impact will be under-reported for that event.
+
 ```{r assess economic impact}
 statedata$PROPDMGEXP=sub("K","1000", statedata$PROPDMGEXP, ignore.case=T)
 statedata$PROPDMGEXP=sub("M","1000000", statedata$PROPDMGEXP, ignore.case=T)
@@ -113,7 +149,7 @@ statedata$PROPDMGEXP=sub("B","1000000000", statedata$PROPDMGEXP, ignore.case=T)
 statedata$PROPDMGEXP=sub("[^KMB]","1",statedata$PROPDMGEXP, ignore.case=T)
 statedata$PROPDMGEXP=as.numeric(statedata$PROPDMGEXP)
 statedata$PROPDMGEXP[is.na(statedata$PROPDMGEXP)]=1
-table(statedata$PROPDMGEXP)
+#table(statedata$PROPDMGEXP)
 
 statedata$CROPDMGEXP=sub("K","1000", statedata$CROPDMGEXP, ignore.case=T)
 statedata$CROPDMGEXP=sub("M","1000000", statedata$CROPDMGEXP, ignore.case=T)
@@ -121,9 +157,14 @@ statedata$CROPDMGEXP=sub("B","1000000000", statedata$CROPDMGEXP, ignore.case=T)
 statedata$CROPDMGEXP=sub("[^KMB]","1",statedata$CROPDMGEXP, ignore.case=T)
 statedata$CROPDMGEXP=as.numeric(statedata$CROPDMGEXP)
 statedata$CROPDMGEXP[is.na(statedata$CROPDMGEXP)]=1
-table(statedata$CROPDMGEXP)
+#table(statedata$CROPDMGEXP)
 
 statedata$COST = with(statedata, PROPDMG*PROPDMGEXP + CROPDMG*CROPDMGEXP)
+
+# Sum the cost per event type.
+cost=with(statedata, aggregate(COST, by=list(EVTYPE), FUN=sum))
+hi.cost=subset(cost, x > 1e+10)
+hi.cost=droplevels(hi.cost)
 ```
 
 
@@ -132,14 +173,19 @@ statedata$COST = with(statedata, PROPDMG*PROPDMGEXP + CROPDMG*CROPDMGEXP)
 To assess the most harmful severe weather events we will look at events that have a number of high numbers of fatalities and high number of injuries.
 
 ```{r plot harmfulness}
-par(mar=c(10.1,5.1,4.1,2.1))
-par(oma=c(5,3,5))
-plot(hi.fatal, las=2, main="Number of fatalities per severe weather type", xlab="", ylab="Number of Fatalities")
-plot(hi.injury, las=2, main="Number of injuries per severe weather type", xlab="", ylab="Number of Injuries")
+par(mar=c(10.1,6.1,4.1,2.1))
+plot(hi.fatal, las=2, main="Number of fatalities per severe weather type", xlab="", ylab="")
+mtext("Number of Fatalities", side=2, line=5)
+
+plot(hi.injury, las=2, main="Number of injuries per severe weather type", xlab="", ylab="")
+mtext("Number of Injuries", side=2, line=5)
 ```
 
+To assess the economic impact, we report the evnts with have the highest costs (reported on a logarithmic scale).
 
-
-```{r}
+```{r plot economic impact}
+par(mar=c(10.1,6.1,4.1,2.1))
+plot(hi.cost, las=2, main="Economic import by severe weather type", xlab="", ylab="")
+mtext("Event cost (log scale)", side=2, line=5)
 ```
 
